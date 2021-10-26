@@ -1,23 +1,18 @@
-/**
- * Theory:
- *
- * Intro to pure functions and functional programming in general.
- *
- * In this module we introduce the basic concepts of functional programming and we take a look at the style of APIs that we will encounter later on.
- */
+import { pipe } from "@effect-ts/system/Function"
+import * as MathExpr from "./01-MathExpr"
 
-/**
- * Segment:
- *
- * Fluent vs Pipeable
- */
+function string_of_number(n: number): string {
+  return n.toString()
+}
 
-//
-// example code with simple identity
-//
+// @ts-expect-error
+string_of_number(MathExpr.fromNumber(6))
 
-/**
- * Exercise:
- *
- * Build a module Math with 4 behaviour fuctions `add`, `mul`, `sub`, `div` that acts on numbers both in pipeable and fluent variants
- */
+MathExpr.add(MathExpr.fromNumber(3))(MathExpr.fromNumber(5)) // {n: 8}
+
+export const x = pipe(
+  MathExpr.fromNumber(0),
+  MathExpr.add(MathExpr.fromNumber(1)),
+  MathExpr.mul(MathExpr.fromNumber(2)),
+  MathExpr.get
+) // 2
