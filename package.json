@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@effect-ts/core": "^0.45.0",
-    "@effect-ts/node": "^0.30.0"
+    "@effect-ts/node": "^0.30.0",
+    "node-fetch": "^3.0.0"
   }
 }
