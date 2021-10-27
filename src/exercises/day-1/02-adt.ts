@@ -1,6 +1,7 @@
 import { pipe } from "@effect-ts/system/Function"
 import { Tagged } from "@effect-ts/core/Case"
 import { matchTag } from "@effect-ts/system/Utils"
+import * as Chunk from "@effect-ts/core/Collections/Immutable/Chunk"
 
 interface A {
   readonly _tag: "A"
@@ -346,8 +347,6 @@ const asset2 = foreignCurrency({ currentPrice: 10, purchasePrice: 5 }) // 5
 console.log([asset1, asset2].reduce((acc, value) => acc + assetPnl(value), 0)) // 8
 
 // With a portfolio
-
-import * as Chunk from "@effect-ts/core/Collections/Immutable/Chunk"
 
 class Portfolio extends Tagged("Portfolio")<{
   // readonly assets: AssetType[]
