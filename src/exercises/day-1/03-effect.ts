@@ -141,9 +141,7 @@ export const generateRandomNumber = pipe(
 export const generateRandomNumberWithTap = pipe(
   T.accessM((_: RandomNumberGeneratorService) => _.random),
   T.tap((n) =>
-    pipe(
-      T.when(() => n < 0.5)(T.failWith(() => new InvalidNumber({ invalidNumber: n })))
-    )
+    T.when(() => n < 0.5)(T.failWith(() => new InvalidNumber({ invalidNumber: n })))
   )
 )
 

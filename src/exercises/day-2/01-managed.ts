@@ -36,3 +36,43 @@
  * 12) M.provideServiceM
  * 13) M.gen (also supports running Effect directly)
  */
+
+import * as M from "@effect-ts/core/Effect/Managed"
+import * as R from "@effect-ts/core/Effect/Random"
+import * as T from "@effect-ts/core/Effect"
+import { pipe } from "@effect-ts/system/Function"
+import type { Has } from "@effect-ts/core/Has"
+
+export const managedArray: M.Managed<Has<R.Random>, string, string[]> = pipe(
+  R.nextIntBetween(0, 100),
+  T.chain((n) => (n < 50 ? T.fail("error") : T.succeedWith((): string[] => []))),
+  M.makeExit((resource) =>
+    T.succeedWith(() => {
+      console.log(resource.splice(0))
+    })
+  ),
+  M.catchAll(() => managedArray)
+)
+
+export const programDependencies = M.gen(function* (_) {
+  const resourceA = yield* _(managedArray)
+  const resourceB = yield* _(managedArray)
+
+  return { resourceA, resourceB }
+})
+
+export const programUsingManagedArray = pipe(
+  programDependencies,
+  M.use(({ resourceA, resourceB }) =>
+    T.tuple(
+      T.succeedWith(() => {
+        resourceA.push("message 1 for A")
+        resourceB.push("message 1 for B")
+      }),
+      T.succeedWith(() => {
+        resourceA.push("message 2 for A")
+        resourceB.push("message 2 for B")
+      })
+    )
+  )
+)
