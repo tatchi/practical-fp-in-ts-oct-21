@@ -271,13 +271,13 @@ function evaluateTag(expr: MathExprTag): number {
     case "Value":
       return expr.n
     case "Add":
-      return evaluate(expr.leftExpr) + evaluate(expr.rightExpr)
+      return evaluateTag(expr.leftExpr) + evaluateTag(expr.rightExpr)
     case "Sub":
-      return evaluate(expr.leftExpr) - evaluate(expr.rightExpr)
+      return evaluateTag(expr.leftExpr) - evaluateTag(expr.rightExpr)
     case "Mul":
-      return evaluate(expr.leftExpr) * evaluate(expr.rightExpr)
+      return evaluateTag(expr.leftExpr) * evaluateTag(expr.rightExpr)
     case "Div":
-      return evaluate(expr.leftExpr) / evaluate(expr.rightExpr)
+      return evaluateTag(expr.leftExpr) / evaluateTag(expr.rightExpr)
   }
 }
 
