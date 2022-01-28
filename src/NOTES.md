@@ -1,0 +1,2 @@
+Semigroup -> Associative
+Monoid -> Identity
