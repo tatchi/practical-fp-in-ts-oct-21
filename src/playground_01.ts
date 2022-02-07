@@ -2,8 +2,17 @@ import * as O from "@effect-ts/core/Option"
 import * as A from "@effect-ts/core/Associative"
 import * as Ord from "@effect-ts/core/Ord"
 import * as I from "@effect-ts/core/Identity"
-import { pipe } from "@effect-ts/core/Function"
-import { NonEmptyArray, Record, List, Array, Equal } from "@effect-ts/core"
+// import * as Arr2 from "@effect-ts/system/Collections/Immutable/Array"
+import { flow, pipe } from "@effect-ts/core/Function"
+
+import {
+  NonEmptyArray,
+  Record,
+  List,
+  Array as Arr,
+  Equal,
+  String
+} from "@effect-ts/core"
 
 let compare_result = Ord.number.compare(1, 2) // -1
 
@@ -152,12 +161,12 @@ pipe([O.some(3), O.some(1)], I.fold(id), console.log)
 
 pipe(
   [1, 2, 3],
-  Array.filter((elem) => Equal.number.equals(elem, 1)) // [1]
+  Arr.filter((elem) => Equal.number.equals(elem, 1)) // [1]
 )
 
 pipe(
   [1, 2, 3],
-  Array.elem(Equal.number)(1) // true
+  Arr.elem(Equal.number)(1) // true
 )
 
 type Point = {
@@ -177,14 +186,14 @@ const points: ReadonlyArray<Point> = [
 
 const search: Point = { x: 1, y: 1 }
 
-pipe(points, Array.elem(eqPoint)(search)) // true
+pipe(points, Arr.elem(eqPoint)(search)) // true
 
 const structEqPoint: Equal.Equal<Point> = Equal.struct({
   x: Equal.number,
   y: Equal.number
 })
 
-const arrPointEq = Array.getEqual(structEqPoint)
+const arrPointEq = Arr.getEqual(structEqPoint)
 
 arrPointEq.equals([{ x: 1, y: 2 }], [{ x: 1, y: 2 }]) // true
 
@@ -212,6 +221,113 @@ eqUserId.equals(
   { id: 1, name: "Giulio", createdAt: new Date("1999-02-01") },
   { id: 1, name: "Giulio Canti", createdAt: new Date("1999-02-01") }
 ) // true (even though the `name` property differs)
+
+// Ord
+
+const sort =
+  <A>(O: Ord.Ord<A>) =>
+  (as: ReadonlyArray<A>): ReadonlyArray<A> =>
+    as.slice().sort(O.compare)
+
+pipe([3, 1, 2], sort(Ord.number)) // [1,2,3]
+
+const min =
+  <A>(O: Ord.Ord<A>) =>
+  (second: A) =>
+  (first: A): A =>
+    O.compare(first, second) === 1 ? second : first
+
+pipe(2, min(Ord.number)(1)) // 1
+
+const max = flow(Ord.inverted, min)
+
+pipe(2, max(Ord.number)(1)) // 2
+
+type User_ord = {
+  readonly name: string
+  readonly age: number
+}
+
+const byAge: Ord.Ord<User_ord> = Ord.makeOrd((first, second) =>
+  Ord.number.compare(first.age, second.age)
+)
+
+const byAge2: Ord.Ord<User_ord> = pipe(
+  Ord.number,
+  Ord.contramap((_) => _.age)
+)
+
+const getYounger = min(byAge2)
+
+pipe({ name: "Guido", age: 50 }, getYounger({ name: "Giulio", age: 47 })) // { name: 'Giulio', age: 47 }
+
+const getOlder = flow(Ord.inverted, min)(byAge2)
+
+// const getOlder = pipe(byAge2, Ord.inverted, min)
+
+pipe({ name: "Guido", age: 50 }, getOlder({ name: "Giulio", age: 47 })) // { name: 'Guido', age: 50 }
+
+/**
+ * Suppose we need to build a system where, in a database, there are records of customers.
+ * For some reason, there might be duplicate records for the same person.
+ * We need a merging strategy. Well, that's Semigroup's bread and butter!
+ */
+
+interface Customer {
+  readonly name: string
+  readonly favouriteThings: ReadonlyArray<string>
+  readonly registeredAt: Date // since epoch
+  readonly lastUpdatedAt: Date // since epoch
+  readonly hasMadePurchase: boolean
+}
+
+const associateCustomer = A.struct<Customer>({
+  // keep the longer name
+  /**
+   * A.max(
+  pipe(
+    Ord.number,
+    Ord.contramap<number, string>((_) => _.length)
+  )
+)
+   */
+  name: A.max(Ord.string),
+  // accumulate things
+  // Identity (monoid) is an associative (with an empty value).
+  // A.makeAssociative(Arr.getIdentity<string>().combine)
+  favouriteThings: Arr.getIdentity<string>(),
+  // keep the least recent date
+  registeredAt: A.min(Ord.date),
+  // keep the most recent date
+  lastUpdatedAt: A.max(Ord.date),
+  // boolean semigroup under disjunction
+  hasMadePurchase: A.any
+})
+
+console.log(
+  associateCustomer.combine(
+    {
+      name: "Giulio",
+      favouriteThings: ["math", "climbing"],
+      registeredAt: new Date(2018, 1, 20),
+      lastUpdatedAt: new Date(2018, 2, 18),
+      hasMadePurchase: false
+    },
+    {
+      name: "Giulio Canti",
+      favouriteThings: ["functional programming"],
+      registeredAt: new Date(2018, 1, 22),
+      lastUpdatedAt: new Date(2018, 2, 9),
+      hasMadePurchase: true
+    }
+  )
+) /* {
+  name: 'Giulio Canti',
+  favouriteThings: [ 'math', 'climbing', 'functional programming' ],
+  registeredAt: 1519081200000,
+  lastUpdatedAt: 1521327600000,
+  hasMadePurchase: true
+} */
 
 export interface RetryStatus {
   iterNumber: number
